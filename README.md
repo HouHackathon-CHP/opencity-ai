@@ -12,6 +12,41 @@ Dịch vụ chạy một kiến trúc đa nhiệm (Multi-Task Learning) trên n�
 
 ---
 
+## 🏗️ Cấu trúc thư mục module hóa (Modular Architecture)
+
+```
+opencity-ai/
+├── app/
+│   ├── api/
+│   │   └── routes/
+│   │       ├── health.py           # Endpoint kiểm tra trạng thái sức khỏe service & thiết bị GPU/CPU
+│   │       └── analyze.py          # Endpoint tiếp nhận văn bản, phân loại và phát hiện trùng lặp
+│   ├── core/
+│   │   ├── config.py               # Thiết lập môi trường, phát hiện CUDA/GPU, đường dẫn mô hình
+│   │   └── security.py             # Xác thực HMAC gateway giữa các microservices
+│   ├── schemas/
+│   │   └── analysis.py             # Định nghĩa Pydantic schemas cho Request & Response
+│   ├── services/
+│   │   ├── model_loader.py         # Quản lý vòng đời mô hình PhoBERT Multi-Task (PyTorch)
+│   │   ├── civic_classifier.py     # Logic dự đoán đơn vị thụ lý & độ khẩn cấp
+│   │   └── deduplication.py        # Động cơ so khớp không gian thời gian (Haversine + Embeddings)
+│   ├── models/
+│   │   └── phobert_multitask/      # Trọng số safetensors, tokenizer, từ điển bpe
+│   └── main.py                     # Entrypoint khởi tạo FastAPI và kết nối các router
+├── docs/
+│   └── license-audit.md            # Báo cáo rà soát giấy phép mã nguồn mở (OSI-approved)
+├── scripts/
+│   └── check_direct_licenses.py    # Script cổng tự động kiểm tra giấy phép thư viện
+├── tests/
+│   └── test_service.py             # Bộ kiểm thử tự động pytest cho các endpoint
+├── training/                       # Kịch bản sinh dữ liệu và huấn luyện GPU RTX 3090
+├── .github/workflows/ci.yml        # CI/CD tự động kiểm thử và đóng gói Docker
+├── Dockerfile                      # Khởi tạo container độc lập
+└── LICENSE                         # Giấy phép Apache License 2.0
+```
+
+---
+
 ## 🚀 Khởi chạy độc lập (Standalone)
 
 ### Cách 1: Chạy bằng Python (Hỗ trợ GPU CUDA / CPU)

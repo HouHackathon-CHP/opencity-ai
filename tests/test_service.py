@@ -49,6 +49,7 @@ def test_analyze_spatiotemporal_deduplication(client):
         "labels": ["transport", "infrastructure", "environment", "intake"],
         "examples": [
             {"label": "environment", "text": "Cây đổ gãy cành"},
+            {"label": "transport", "text": "Tắc nghẽn giao thông"},
         ],
         "candidates": [
             {
