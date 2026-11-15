@@ -79,3 +79,30 @@ def test_analyze_spatiotemporal_deduplication(client):
     # Nearby incident should have high similarity score
     assert data["similar"][0]["id"] == "rep_nearby_same_time"
     assert data["similar"][0]["similarity"] >= 0.5
+
+
+def test_voice_transcription(client):
+    import io
+    import wave
+    import numpy as np
+
+    # Generate 1-second in-memory WAV audio for testing
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(16000)
+        samples = (np.sin(2 * np.pi * 440 * np.linspace(0, 1, 16000)) * 10000).astype(np.int16)
+        wf.writeframes(samples.tobytes())
+    buf.seek(0)
+
+    files = {"audio": ("test.wav", buf.read(), "audio/wav")}
+    response = client.post("/transcribe", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert "text" in data
+    assert "suggested_title" in data
+    assert "suggested_category" in data
+    assert "duration_seconds" in data
+    assert data["duration_seconds"] > 0
+

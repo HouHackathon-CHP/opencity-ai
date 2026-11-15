@@ -18,6 +18,8 @@ Dự án **OpenCity AI Microservice** (`opencity-ai`) được cấp phép theo 
 | **Safetensors** | 0.4.0+ | **Apache-2.0** | OSI Approved | Hugging Face (Định dạng an toàn không dùng pickle) |
 | **SentencePiece** | 0.2.0+ | **Apache-2.0** | OSI Approved | Google Open Source |
 | **Protobuf** | 4.25.0+ | **BSD-3-Clause** | OSI Approved | Google Open Source |
+| **Whisper (STT Base)** | tiny / base | **MIT** | OSI Approved | OpenAI Open Source Speech Model |
+| **PyAV (av)** | 12.0.0+ | **BSD-3-Clause / LGPL-2.1+** | OSI Approved | Python binding for FFmpeg audio/video processing |
 | **Python Runtime** | `python:3.12-slim` | **PSF License** | OSI Approved | Python Software Foundation |
 
 ---

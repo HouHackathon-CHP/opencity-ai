@@ -13,8 +13,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.routes import analyze_router, health_router
+from app.api.routes import analyze_router, health_router, voice_router
 from app.services.model_loader import load_model
+from app.services.voice_transcriber import load_whisper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("opencity.ai")
@@ -25,6 +26,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan context for model pre-warming and graceful shutdown."""
     logger.info("Initializing OpenCity AI Microservice...")
     load_model()
+    load_whisper()
     yield
     logger.info("Shutting down OpenCity AI Microservice...")
 
@@ -41,3 +43,4 @@ app = FastAPI(
 # Register modular routes
 app.include_router(health_router)
 app.include_router(analyze_router)
+app.include_router(voice_router)

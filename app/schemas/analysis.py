@@ -53,3 +53,13 @@ class HealthResponse(BaseModel):
     ai_model: str
     device: str
     model_version: str
+
+
+class VoiceTranscriptionResponse(BaseModel):
+    text: str
+    suggested_title: str
+    suggested_category: str
+    suggested_unit: str
+    urgency: str
+    duration_seconds: float
+
