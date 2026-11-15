@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-from app.core.config import DEVICE
+from app.core.config import DEVICE, MODELS_DIR
 from app.services.civic_classifier import classify_text
 from app.services.model_loader import get_ai_engine
 
@@ -16,7 +16,8 @@ logger = logging.getLogger("opencity.ai.voice")
 
 _whisper_model = None
 _whisper_processor = None
-WHISPER_MODEL_NAME = "openai/whisper-tiny"
+WHISPER_LOCAL_DIR = MODELS_DIR / "whisper_tiny"
+WHISPER_MODEL_NAME = str(WHISPER_LOCAL_DIR) if (WHISPER_LOCAL_DIR / "model.safetensors").exists() else "openai/whisper-tiny"
 
 
 def load_whisper():

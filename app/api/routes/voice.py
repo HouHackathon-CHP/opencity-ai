@@ -9,7 +9,7 @@ from app.services.voice_transcriber import transcribe_audio
 
 router = APIRouter(tags=["Voice AI"])
 
-MAX_AUDIO_BYTES = 25 * 1024 * 1024  # 25 MiB
+MAX_AUDIO_BYTES = 25 * 1024 * 104  # 25 MiB
 
 
 @router.post("/transcribe", response_model=VoiceTranscriptionResponse)
