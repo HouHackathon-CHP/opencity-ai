@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 """Unit tests for OpenCity AI Microservice."""
 
+import sys
+from pathlib import Path
+
+# Ensure app module is in python sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import pytest
 from fastapi.testclient import TestClient
 

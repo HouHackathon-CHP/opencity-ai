@@ -34,7 +34,9 @@ jobs:
         run: python scripts/check_direct_licenses.py
 
       - name: Run Unit Tests
-        run: pytest tests/ -v
+        run: python -m pytest tests/ -v
+        env:
+          PYTHONPATH: .
 
   docker-build:
     name: Container Build Verification
