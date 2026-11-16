@@ -10,6 +10,7 @@ REVIEWED = {
     "fastapi": ("0.115.0", "MIT"),
     "uvicorn": ("0.32.0", "BSD-3-Clause"),
     "pydantic": ("2.9.2", "MIT"),
+    "python-multipart": ("0.0.32", "Apache-2.0"),
 }
 PIN = re.compile(r"^([A-Za-z0-9_.-]+)==([^\s#]+)$")
 

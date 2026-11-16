@@ -34,7 +34,7 @@ jobs:
         run: python scripts/check_direct_licenses.py
 
       - name: Run Unit Tests
-        run: python -m pytest tests/ -v
+        run: python -m pytest tests/ -v --tb=short
         env:
           PYTHONPATH: .
 

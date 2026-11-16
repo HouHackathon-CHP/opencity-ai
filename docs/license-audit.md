@@ -13,6 +13,7 @@ Dự án **OpenCity AI Microservice** (`opencity-ai`) được cấp phép theo 
 | **FastAPI** | 0.115.0+ | **MIT** | OSI Approved | Web framework hiệu năng cao |
 | **Uvicorn** | 0.32.0+ | **BSD-3-Clause** | OSI Approved | Máy chủ ASGI mã nguồn mở |
 | **Pydantic** | 2.9.2+ | **MIT** | OSI Approved | Xác thực dữ liệu |
+| **python-multipart** | 0.0.32+ | **Apache-2.0** | OSI Approved | Xử lý file tải lên đa phần (Multipart audio upload) |
 | **PyTorch (torch)** | 2.2.0+ | **BSD-style / Modified BSD** | OSI Approved | Meta Open Source / Linux Foundation |
 | **Transformers** | 4.40.0+ | **Apache-2.0** | OSI Approved | Hugging Face Open Source |
 | **Safetensors** | 0.4.0+ | **Apache-2.0** | OSI Approved | Hugging Face (Định dạng an toàn không dùng pickle) |
