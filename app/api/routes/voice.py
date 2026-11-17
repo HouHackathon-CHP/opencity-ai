@@ -13,6 +13,7 @@ MAX_AUDIO_BYTES = 25 * 1024 * 104  # 25 MiB
 
 
 @router.post("/transcribe", response_model=VoiceTranscriptionResponse)
+@router.post("/api/opencity/reports/voice-transcribe", response_model=VoiceTranscriptionResponse)
 async def transcribe_speech(
     audio: UploadFile = File(..., description="Audio recording file (WebM, WAV, MP3, OGG, M4A)"),
     tenant: str = Depends(internal_caller),
