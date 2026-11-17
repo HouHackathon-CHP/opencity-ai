@@ -3,6 +3,7 @@
 
 import io
 import logging
+import os
 import re
 from typing import Any
 
@@ -16,8 +17,12 @@ logger = logging.getLogger("opencity.ai.voice")
 
 _whisper_model = None
 _whisper_processor = None
-WHISPER_LOCAL_DIR = MODELS_DIR / "whisper_tiny"
-WHISPER_MODEL_NAME = str(WHISPER_LOCAL_DIR) if (WHISPER_LOCAL_DIR / "model.safetensors").exists() else "openai/whisper-tiny"
+WHISPER_LOCAL_DIR = MODELS_DIR / "phowhisper_base"
+DEFAULT_MODEL_NAME = "vinai/PhoWhisper-base"
+WHISPER_MODEL_NAME = os.getenv(
+    "WHISPER_MODEL_NAME",
+    str(WHISPER_LOCAL_DIR) if (WHISPER_LOCAL_DIR / "model.safetensors").exists() else DEFAULT_MODEL_NAME,
+)
 
 
 def load_whisper():
