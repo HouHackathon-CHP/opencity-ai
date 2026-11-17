@@ -57,7 +57,7 @@ load_whisper = load_phowhisper
 
 
 def decode_audio_to_16k_mono(audio_bytes: bytes) -> tuple[np.ndarray, float]:
-    """Decode audio bytes (WAV, WebM, MP3, OGG, M4A) to 16kHz float32 mono numpy array."""
+    """Decode audio bytes (WAV, WebM, MP3, OGG, M4A) to 16kHz float32 mono numpy array with volume normalization."""
     import av
 
     container = av.open(io.BytesIO(audio_bytes))
@@ -74,10 +74,22 @@ def decode_audio_to_16k_mono(audio_bytes: bytes) -> tuple[np.ndarray, float]:
             for r in resampled:
                 audio_frames.append(r.to_ndarray())
 
+    # Flush all remaining frames in the resampler buffer to prevent dropping initial/final words
+    flushed = resampler.resample(None)
+    if flushed:
+        for r in flushed:
+            audio_frames.append(r.to_ndarray())
+
     if not audio_frames:
         return np.zeros(16000, dtype=np.float32), 1.0
 
     audio_data = np.concatenate(audio_frames, axis=1)[0].astype(np.float32)
+
+    # Normalize audio gain so soft microphone recording doesn't cause consonant/vowel distortion
+    max_amp = float(np.abs(audio_data).max())
+    if max_amp > 1e-4:
+        audio_data = (audio_data / max_amp) * 0.95
+
     duration_seconds = round(len(audio_data) / 16000.0, 2)
     return audio_data, duration_seconds
 
@@ -118,13 +130,29 @@ def transcribe_audio(audio_bytes: bytes) -> dict[str, Any]:
             "duration_seconds": duration,
         }
 
+    max_amp = float(np.abs(audio_data).max()) if len(audio_data) > 0 else 0.0
+    if max_amp < 0.005 or duration < 0.3:
+        return {
+            "text": "Âm thanh không rõ hoặc có nhiều tiếng ồn.",
+            "suggested_title": "Phản ánh bằng giọng nói",
+            "suggested_category": "Tiếp nhận chung",
+            "suggested_unit": "intake",
+            "urgency": "normal",
+            "duration_seconds": duration,
+        }
+
     import torch
 
     inputs = processor(audio_data, sampling_rate=16000, return_tensors="pt")
     input_features = inputs.input_features.to(DEVICE)
 
     with torch.no_grad():
-        predicted_ids = model.generate(input_features, language="vi", task="transcribe")
+        predicted_ids = model.generate(
+            input_features,
+            language="vi",
+            task="transcribe",
+            num_beams=3,
+        )
         transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0].strip()
 
     # Post-process transcription
