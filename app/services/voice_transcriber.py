@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Speech-to-Text Voice Transcription Service using open-source Whisper."""
+"""Speech-to-Text Voice Transcription Service using VinAI PhoWhisper (Vietnamese ASR)."""
 
 import io
 import logging
@@ -15,38 +15,45 @@ from app.services.model_loader import get_ai_engine
 
 logger = logging.getLogger("opencity.ai.voice")
 
-_whisper_model = None
-_whisper_processor = None
-WHISPER_LOCAL_DIR = MODELS_DIR / "phowhisper_base"
+_phowhisper_model = None
+_phowhisper_processor = None
+PHOWHISPER_LOCAL_DIR = MODELS_DIR / "phowhisper_base"
 DEFAULT_MODEL_NAME = "vinai/PhoWhisper-base"
-WHISPER_MODEL_NAME = os.getenv(
-    "WHISPER_MODEL_NAME",
-    str(WHISPER_LOCAL_DIR) if (WHISPER_LOCAL_DIR / "model.safetensors").exists() else DEFAULT_MODEL_NAME,
+PHOWHISPER_MODEL_NAME = os.getenv(
+    "PHOWHISPER_MODEL_NAME",
+    os.getenv(
+        "WHISPER_MODEL_NAME",
+        str(PHOWHISPER_LOCAL_DIR) if (PHOWHISPER_LOCAL_DIR / "model.safetensors").exists() else DEFAULT_MODEL_NAME,
+    ),
 )
 
 
-def load_whisper():
-    """Load open-source Whisper model for Vietnamese speech recognition."""
-    global _whisper_model, _whisper_processor
-    if _whisper_model is not None:
-        return _whisper_model, _whisper_processor
+def load_phowhisper():
+    """Load open-source VinAI PhoWhisper model specialized for Vietnamese speech recognition."""
+    global _phowhisper_model, _phowhisper_processor
+    if _phowhisper_model is not None:
+        return _phowhisper_model, _phowhisper_processor
 
     try:
         from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
 
-        logger.info("Loading Whisper model: %s onto %s...", WHISPER_MODEL_NAME, DEVICE)
-        _whisper_processor = AutoProcessor.from_pretrained(WHISPER_MODEL_NAME)
-        model = AutoModelForSpeechSeq2Seq.from_pretrained(WHISPER_MODEL_NAME)
+        logger.info("Loading Vietnamese ASR model (PhoWhisper): %s onto %s...", PHOWHISPER_MODEL_NAME, DEVICE)
+        _phowhisper_processor = AutoProcessor.from_pretrained(PHOWHISPER_MODEL_NAME)
+        model = AutoModelForSpeechSeq2Seq.from_pretrained(PHOWHISPER_MODEL_NAME)
         model.to(DEVICE)
         model.eval()
-        _whisper_model = model
-        logger.info("Whisper model loaded successfully.")
+        _phowhisper_model = model
+        logger.info("PhoWhisper Vietnamese model loaded successfully.")
     except Exception as exc:
-        logger.warning("Could not load Whisper model (%s). Voice service in fallback mode.", exc)
-        _whisper_model = None
-        _whisper_processor = None
+        logger.warning("Could not load PhoWhisper model (%s). Voice service in fallback mode.", exc)
+        _phowhisper_model = None
+        _phowhisper_processor = None
 
-    return _whisper_model, _whisper_processor
+    return _phowhisper_model, _phowhisper_processor
+
+
+# Backward-compatible alias
+load_whisper = load_phowhisper
 
 
 def decode_audio_to_16k_mono(audio_bytes: bytes) -> tuple[np.ndarray, float]:
@@ -97,8 +104,8 @@ UNIT_TO_VIETNAMESE = {
 
 
 def transcribe_audio(audio_bytes: bytes) -> dict[str, Any]:
-    """Transcribe audio into text and automatically infer civic routing and urgency."""
-    model, processor = load_whisper()
+    """Transcribe audio into text using VinAI PhoWhisper and infer civic routing."""
+    model, processor = load_phowhisper()
     audio_data, duration = decode_audio_to_16k_mono(audio_bytes)
 
     if model is None or processor is None:

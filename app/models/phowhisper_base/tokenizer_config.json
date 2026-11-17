@@ -117,7 +117,7 @@
   "is_local": false,
   "language": null,
   "local_files_only": false,
-  "model_max_length": 1024,
+  "model_max_length": 448,
   "pad_token": "<|endoftext|>",
   "predict_timestamps": false,
   "processor_class": "WhisperProcessor",
