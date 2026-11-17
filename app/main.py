@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse
 
 from app.api.routes import analyze_router, health_router, voice_router
 from app.services.model_loader import load_model
-from app.services.voice_transcriber import load_whisper
+from app.services.voice_transcriber import load_voice_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("opencity.ai")
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan context for model pre-warming and graceful shutdown."""
     logger.info("Initializing OpenCity AI Microservice...")
     load_model()
-    load_whisper()
+    load_voice_model()
     yield
     logger.info("Shutting down OpenCity AI Microservice...")
 
@@ -124,7 +124,7 @@ async def testing_portal():
     <div class="header">
       <span class="badge">OpenCity AI Microservice v2.0</span>
       <h1>Kiểm thử Nhận diện Giọng nói Tiếng Việt</h1>
-      <p>Tích hợp mô hình <strong>vinai/PhoWhisper-base</strong> & <strong>PhoBERT Multi-Task</strong></p>
+      <p>Tích hợp mô hình <strong>Wav2Vec2 Vietnamese (13.000h Natural Speech)</strong> & <strong>PhoBERT Multi-Task</strong></p>
     </div>
 
     <div class="card">
@@ -200,7 +200,7 @@ async def testing_portal():
 
     async function sendAudio(blob) {
       spinner.style.display = 'block';
-      statusText.textContent = 'PhoWhisper đang giải mã âm thanh...';
+      statusText.textContent = 'Wav2Vec2 đang giải mã âm thanh...';
       const formData = new FormData();
       formData.append('audio', blob, 'recording.webm');
 

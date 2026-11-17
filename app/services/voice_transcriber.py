@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Speech-to-Text Voice Transcription Service using VinAI PhoWhisper (Vietnamese ASR)."""
+"""Speech-to-Text Voice Transcription Service using Wav2Vec2 Vietnamese (CTC Architecture)."""
 
 import io
 import logging
@@ -15,45 +15,46 @@ from app.services.model_loader import get_ai_engine
 
 logger = logging.getLogger("opencity.ai.voice")
 
-_phowhisper_model = None
-_phowhisper_processor = None
-PHOWHISPER_LOCAL_DIR = MODELS_DIR / "phowhisper_base"
-DEFAULT_MODEL_NAME = "vinai/PhoWhisper-base"
-PHOWHISPER_MODEL_NAME = os.getenv(
-    "PHOWHISPER_MODEL_NAME",
+_voice_model = None
+_voice_processor = None
+WAV2VEC2_LOCAL_DIR = MODELS_DIR / "wav2vec2_vi"
+DEFAULT_MODEL_NAME = "nguyenvulebinh/wav2vec2-base-vietnamese-250h"
+VOICE_MODEL_NAME = os.getenv(
+    "VOICE_MODEL_NAME",
     os.getenv(
-        "WHISPER_MODEL_NAME",
-        str(PHOWHISPER_LOCAL_DIR) if (PHOWHISPER_LOCAL_DIR / "model.safetensors").exists() else DEFAULT_MODEL_NAME,
+        "PHOWHISPER_MODEL_NAME",
+        str(WAV2VEC2_LOCAL_DIR) if (WAV2VEC2_LOCAL_DIR / "model.safetensors").exists() else DEFAULT_MODEL_NAME,
     ),
 )
 
 
-def load_phowhisper():
-    """Load open-source VinAI PhoWhisper model specialized for Vietnamese speech recognition."""
-    global _phowhisper_model, _phowhisper_processor
-    if _phowhisper_model is not None:
-        return _phowhisper_model, _phowhisper_processor
+def load_voice_model():
+    """Load open-source Wav2Vec2 Vietnamese ASR model trained on 13,000+ hours of speech."""
+    global _voice_model, _voice_processor
+    if _voice_model is not None:
+        return _voice_model, _voice_processor
 
     try:
-        from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+        from transformers import AutoModelForCTC, AutoProcessor
 
-        logger.info("Loading Vietnamese ASR model (PhoWhisper): %s onto %s...", PHOWHISPER_MODEL_NAME, DEVICE)
-        _phowhisper_processor = AutoProcessor.from_pretrained(PHOWHISPER_MODEL_NAME)
-        model = AutoModelForSpeechSeq2Seq.from_pretrained(PHOWHISPER_MODEL_NAME)
+        logger.info("Loading Vietnamese ASR model (Wav2Vec2): %s onto %s...", VOICE_MODEL_NAME, DEVICE)
+        _voice_processor = AutoProcessor.from_pretrained(VOICE_MODEL_NAME)
+        model = AutoModelForCTC.from_pretrained(VOICE_MODEL_NAME)
         model.to(DEVICE)
         model.eval()
-        _phowhisper_model = model
-        logger.info("PhoWhisper Vietnamese model loaded successfully.")
+        _voice_model = model
+        logger.info("Wav2Vec2 Vietnamese ASR model loaded successfully.")
     except Exception as exc:
-        logger.warning("Could not load PhoWhisper model (%s). Voice service in fallback mode.", exc)
-        _phowhisper_model = None
-        _phowhisper_processor = None
+        logger.warning("Could not load Wav2Vec2 model (%s). Voice service in fallback mode.", exc)
+        _voice_model = None
+        _voice_processor = None
 
-    return _phowhisper_model, _phowhisper_processor
+    return _voice_model, _voice_processor
 
 
-# Backward-compatible alias
-load_whisper = load_phowhisper
+# Backward-compatible aliases
+load_phowhisper = load_voice_model
+load_whisper = load_voice_model
 
 
 def decode_audio_to_16k_mono(audio_bytes: bytes) -> tuple[np.ndarray, float]:
@@ -116,8 +117,8 @@ UNIT_TO_VIETNAMESE = {
 
 
 def transcribe_audio(audio_bytes: bytes) -> dict[str, Any]:
-    """Transcribe audio into text using VinAI PhoWhisper and infer civic routing."""
-    model, processor = load_phowhisper()
+    """Transcribe audio into text using Wav2Vec2 Vietnamese CTC and infer civic routing."""
+    model, processor = load_voice_model()
     audio_data, duration = decode_audio_to_16k_mono(audio_bytes)
 
     if model is None or processor is None:
@@ -144,19 +145,19 @@ def transcribe_audio(audio_bytes: bytes) -> dict[str, Any]:
     import torch
 
     inputs = processor(audio_data, sampling_rate=16000, return_tensors="pt")
-    input_features = inputs.input_features.to(DEVICE)
+    input_values = inputs.input_values.to(DEVICE)
 
     with torch.no_grad():
-        predicted_ids = model.generate(
-            input_features,
-            language="vi",
-            task="transcribe",
-            num_beams=3,
-        )
-        transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0].strip()
+        logits = model(input_values).logits
+        pred_ids = torch.argmax(logits, dim=-1)
+        raw_text = processor.batch_decode(pred_ids)[0].strip()
 
-    # Post-process transcription
-    if not transcription:
+    # Format transcribed Vietnamese text with proper capitalization and punctuation
+    if raw_text:
+        transcription = raw_text[0].upper() + raw_text[1:]
+        if not transcription.endswith((".", "!", "?")):
+            transcription += "."
+    else:
         transcription = "Âm thanh không rõ hoặc có nhiều tiếng ồn."
 
     # Run PhoBERT Multi-Task on the transcribed text for instant civic routing
