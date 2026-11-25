@@ -73,6 +73,20 @@ docker run -d -p 8000:8000 --name opencity-ai opencity-ai
 
 ---
 
+## Kết nối với OpenCity
+
+Đặt `opencity-ai` cùng cấp với `dxos-core` và `opencity-backend`, rồi chạy
+`git lfs pull` trong repo này để tải trọng số mô hình. Compose kết hợp trong
+`opencity-backend/compose.stack.yaml` khởi động dịch vụ AI chỉ trên mạng nội bộ;
+backend gọi `http://opencity-ai:8000/analyze` sau khi kiểm tra tenant và quyền
+điều phối. Cả hai service dùng `INTERNAL_GATEWAY_SECRET` từ `dxos-core/.env`
+để xác thực lời gọi nội bộ. Core không chạy bộ phân loại phản ánh riêng.
+
+Nếu thiếu trọng số, API văn bản dùng Naive Bayes và TF-IDF dự phòng. Kiểm tra
+trường `ai_model` ở `/health` trước khi đánh giá chất lượng mô hình. Không mở
+cổng AI trực tiếp ra Internet bằng lệnh Docker standalone nếu chưa thiết lập
+xác thực và giới hạn truy cập.
+
 ## 📡 API Endpoints
 
 ### 1. `GET /health`
@@ -96,7 +110,10 @@ Phân tích văn bản phản ánh, tính toán xác suất phân luồng đơn 
 {
   "text": "Cột điện nghiêng nguy hiểm sắp đổ ở phố Chùa Bộc",
   "labels": ["infrastructure", "environment", "transport", "intake"],
-  "examples": [],
+  "examples": [
+    {"label": "infrastructure", "text": "Cột điện nghiêng nguy hiểm cần sửa"},
+    {"label": "environment", "text": "Rác thải chưa được thu gom"}
+  ],
   "candidates": [
     {
       "id": "rep_123",
