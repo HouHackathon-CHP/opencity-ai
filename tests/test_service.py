@@ -49,6 +49,63 @@ def test_analyze_civic_classification(client):
     assert top_label in ["transport", "infrastructure"]
 
 
+def test_analyze_requires_internal_secret_when_configured(client, monkeypatch):
+    from app.core import security
+
+    monkeypatch.setattr(security, "INTERNAL_SECRET", "integration-secret")
+    payload = {
+        "text": "Cột điện hỏng cần sửa ngay",
+        "labels": ["infrastructure", "environment"],
+        "examples": [
+            {"label": "infrastructure", "text": "Cột điện hỏng"},
+            {"label": "environment", "text": "Rác thải tồn đọng"},
+        ],
+    }
+    assert client.post("/analyze", json=payload).status_code == 403
+    response = client.post("/analyze", json=payload,
+                           headers={"X-Internal-Secret": "integration-secret",
+                                    "X-DXOS-Tenant": "demo"})
+    assert response.status_code == 200
+
+
+def test_backend_triage_contract_accepts_location_and_urgency(client, monkeypatch):
+    from app.core import security
+
+    monkeypatch.setattr(security, "INTERNAL_SECRET", "integration-secret")
+    headers = {"X-Internal-Secret": "integration-secret", "X-DXOS-Tenant": "demo"}
+    unit_response = client.post("/analyze", headers=headers, json={
+        "text": "Cây đổ chắn đường trước trường học",
+        "labels": ["environment", "infrastructure", "intake", "transport"],
+        "examples": [
+            {"label": "environment", "text": "Cây xanh gãy đổ nguy hiểm"},
+            {"label": "transport", "text": "Xe buýt chậm tuyến đường"},
+        ],
+        "candidates": [{
+            "id": "report-2", "text": "Cây đổ trên phố gần trường học",
+            "latitude": 21.028, "longitude": 105.854,
+            "created_at": "2026-11-25T08:00:00+07:00",
+        }],
+        "latitude": 21.0281, "longitude": 105.8541,
+        "created_at": "2026-11-25T08:15:00+07:00",
+    })
+    assert unit_response.status_code == 200
+    result = unit_response.json()
+    assert result["ranked_labels"][0]["label"] in {"environment", "infrastructure", "intake", "transport"}
+    assert "model_version" in result and "similar" in result and "signals" in result
+
+    urgency_response = client.post("/analyze", headers=headers, json={
+        "text": "Cây đổ chắn đường trước trường học",
+        "labels": ["high", "normal", "low"],
+        "examples": [
+            {"label": "high", "text": "Cây đổ chắn đường nguy hiểm"},
+            {"label": "normal", "text": "Đèn đường hỏng cần sửa"},
+            {"label": "low", "text": "Đề xuất trồng thêm cây xanh"},
+        ],
+    })
+    assert urgency_response.status_code == 200
+    assert urgency_response.json()["ranked_labels"][0]["label"] in {"high", "normal", "low"}
+
+
 def test_analyze_spatiotemporal_deduplication(client):
     payload = {
         "text": "Cây xà cừ cổ thụ bật gốc chắn ngang đường Chùa Bộc",
