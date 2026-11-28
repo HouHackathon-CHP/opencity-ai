@@ -1,53 +1,54 @@
-# OpenCity AI Microservice 🧠🇻🇳
+<div align="center">
 
-Dedicated Vietnamese Civic NLP & Multi-Task AI Engine for the OpenCity Platform.
+# OpenCity AI Microservice
 
-## 🌟 Kiến trúc mô hình (PhoBERT Multi-Task)
+**Dịch vụ xử lý ngôn ngữ tự nhiên tiếng Việt (PhoBERT Multi-Task) và nhận dạng giọng nói (Wav2Vec2 Vietnamese) cho nền tảng OpenCity.**
 
-Dịch vụ chạy một kiến trúc đa nhiệm (Multi-Task Learning) trên nền tảng **PhoBERT-base-v2**:
-- **Backbone**: `vinai/phobert-base-v2` (768 chiều ẩn, tiền huấn luyện trên 20GB văn bản tiếng Việt).
-- **Head 1 (Phân loại đơn vị đô thị)**: 12 danh mục dân sinh -> Ánh xạ 4 đơn vị tiếp nhận chính quyền (`Giao thông`, `Hạ tầng & chiếu sáng`, `Môi trường & cây xanh`, `Tiếp nhận chung`).
-- **Head 2 (Đánh giá mức độ khẩn cấp)**: Dự đoán 3 mức ưu tiên giải quyết (`high`, `normal`, `low`) dựa trên tính cấp bách (sập đổ, nguy hiểm tính mạng, ngập lụt, cháy nổ).
-- **Head 3 (Phát hiện trùng lặp đa chiều - Spatiotemporal Deduplication)**: L2-Normalized Sentence Embeddings kết hợp công thức Haversine (khoảng cách địa lý GPS) và độ trễ thời gian (ISO 8601).
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](requirements.txt)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](app/main.py)
+[![Changelog](https://img.shields.io/badge/Changelog-git--cliff-blue.svg)](CHANGELOG.md)
+
+</div>
 
 ---
 
-## 🏗️ Cấu trúc thư mục module hóa (Modular Architecture)
+## Tính năng chính
 
-```
+### 1. PhoBERT Multi-Task (`vinai/phobert-base-v2`)
+- **Phân loại đơn vị đô thị**: Ánh xạ 12 danh mục dân sinh về 4 đơn vị tiếp nhận (`Giao thông`, `Hạ tầng & chiếu sáng`, `Môi trường & cây xanh`, `Tiếp nhận chung`).
+- **Đánh giá mức độ khẩn cấp**: Dự đoán 3 mức ưu tiên (`high`, `normal`, `low`) dựa trên mức độ cấp bách của phản ánh.
+- **Phát hiện trùng lặp không gian - thời gian**: Kết hợp L2-Normalized Sentence Embeddings với khoảng cách địa lý Haversine và độ trễ thời gian (ISO 8601).
+
+### 2. Nhận dạng giọng nói tiếng Việt (Wav2Vec2 Vietnamese ASR)
+- Chuyển đổi ghi âm giọng nói phản ánh của công dân sang văn bản tiếng Việt và tự động gợi ý tiêu đề, danh mục, mức độ khẩn cấp qua endpoint `POST /api/opencity/reports/voice-transcribe`.
+- Tích hợp sẵn giao diện thử nghiệm nhanh trên trình duyệt tại endpoint gốc (`GET /`).
+
+---
+
+## Cấu trúc thư mục
+
+```text
 opencity-ai/
 ├── app/
-│   ├── api/
-│   │   └── routes/
-│   │       ├── health.py           # Endpoint kiểm tra trạng thái sức khỏe service & thiết bị GPU/CPU
-│   │       └── analyze.py          # Endpoint tiếp nhận văn bản, phân loại và phát hiện trùng lặp
-│   ├── core/
-│   │   ├── config.py               # Thiết lập môi trường, phát hiện CUDA/GPU, đường dẫn mô hình
-│   │   └── security.py             # Xác thực HMAC gateway giữa các microservices
-│   ├── schemas/
-│   │   └── analysis.py             # Định nghĩa Pydantic schemas cho Request & Response
-│   ├── services/
-│   │   ├── model_loader.py         # Quản lý vòng đời mô hình PhoBERT Multi-Task (PyTorch)
-│   │   ├── civic_classifier.py     # Logic dự đoán đơn vị thụ lý & độ khẩn cấp
-│   │   └── deduplication.py        # Động cơ so khớp không gian thời gian (Haversine + Embeddings)
-│   ├── models/
-│   │   └── phobert_multitask/      # Trọng số safetensors, tokenizer, từ điển bpe
-│   └── main.py                     # Entrypoint khởi tạo FastAPI và kết nối các router
-├── docs/
-│   └── license-audit.md            # Báo cáo rà soát giấy phép mã nguồn mở (OSI-approved)
-├── scripts/
-│   └── check_direct_licenses.py    # Script cổng tự động kiểm tra giấy phép thư viện
-├── tests/
-│   └── test_service.py             # Bộ kiểm thử tự động pytest cho các endpoint
-├── training/                       # Kịch bản sinh dữ liệu và huấn luyện GPU RTX 3090
-├── .github/workflows/ci.yml        # CI/CD tự động kiểm thử và đóng gói Docker
-├── Dockerfile                      # Khởi tạo container độc lập
-└── LICENSE                         # Giấy phép Apache License 2.0
+│   ├── api/routes/         # Endpoint /health, /analyze, /api/opencity/reports/voice-transcribe
+│   ├── core/               # Cấu hình môi trường, CUDA/CPU, xác thực HMAC nội bộ
+│   ├── schemas/            # Pydantic schemas cho Request & Response
+│   ├── services/           # Model loader, civic classifier, deduplication, ASR voice service
+│   ├── models/             # Trọng số mô hình local
+│   └── main.py             # Entrypoint FastAPI
+├── docs/                   # Tài liệu audit giấy phép và hướng dẫn git-cliff
+├── scripts/                # Kiểm tra giấy phép thư viện (check_direct_licenses.py)
+├── tests/                  # Bộ kiểm thử pytest
+├── training/               # Pipeline huấn luyện GPU và sinh dữ liệu tổng hợp
+├── .github/workflows/      # CI/CD kiểm thử, deploy và tự động cập nhật CHANGELOG
+├── Dockerfile              # Đóng gói container độc lập
+└── LICENSE                 # Giấy phép Apache License 2.0
 ```
 
 ---
 
-## 🚀 Khởi chạy độc lập (Standalone)
+## Khởi chạy độc lập (Standalone)
 
 ### Cách 1: Chạy bằng Python (Hỗ trợ GPU CUDA / CPU)
 
@@ -58,7 +59,7 @@ source .venv/bin/activate  # Hoặc .venv\Scripts\activate trên Windows
 
 # Cài đặt thư viện
 pip install -r requirements.txt
-pip install torch transformers safetensors sentencepiece protobuf
+pip install -r requirements-dev.txt
 
 # Khởi chạy máy chủ API
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -73,26 +74,11 @@ docker run -d -p 8000:8000 --name opencity-ai opencity-ai
 
 ---
 
-## Kết nối với OpenCity
-
-Đặt `opencity-ai` cùng cấp với `dxos-core` và `opencity-backend`, rồi chạy
-`git lfs pull` trong repo này để tải trọng số mô hình. Compose kết hợp trong
-`opencity-backend/compose.stack.yaml` khởi động dịch vụ AI chỉ trên mạng nội bộ;
-backend gọi `http://opencity-ai:8000/analyze` sau khi kiểm tra tenant và quyền
-điều phối. Cả hai service dùng `INTERNAL_GATEWAY_SECRET` từ `dxos-core/.env`
-để xác thực lời gọi nội bộ. Core không chạy bộ phân loại phản ánh riêng.
-
-Nếu thiếu trọng số, API văn bản dùng Naive Bayes và TF-IDF dự phòng. Kiểm tra
-trường `ai_model` ở `/health` trước khi đánh giá chất lượng mô hình. Không mở
-cổng AI trực tiếp ra Internet bằng lệnh Docker standalone nếu chưa thiết lập
-xác thực và giới hạn truy cập.
-
-## 📡 API Endpoints
+## API Endpoints chính
 
 ### 1. `GET /health`
-Kiểm tra trạng thái sẵn sàng của dịch vụ và model.
+Kiểm tra trạng thái sẵn sàng của dịch vụ và mô hình đang nạp.
 
-**Response:**
 ```json
 {
   "status": "ok",
@@ -110,10 +96,7 @@ Phân tích văn bản phản ánh, tính toán xác suất phân luồng đơn 
 {
   "text": "Cột điện nghiêng nguy hiểm sắp đổ ở phố Chùa Bộc",
   "labels": ["infrastructure", "environment", "transport", "intake"],
-  "examples": [
-    {"label": "infrastructure", "text": "Cột điện nghiêng nguy hiểm cần sửa"},
-    {"label": "environment", "text": "Rác thải chưa được thu gom"}
-  ],
+  "examples": [],
   "candidates": [
     {
       "id": "rep_123",
@@ -145,3 +128,35 @@ Phân tích văn bản phản ánh, tính toán xác suất phân luồng đơn 
   ]
 }
 ```
+
+### 3. `POST /api/opencity/reports/voice-transcribe`
+Nhận file âm thanh (`WebM`, `WAV`, `MP3`, `OGG`, `M4A`), trả về văn bản tiếng Việt cùng gợi ý phân loại và mức độ khẩn cấp.
+
+---
+
+## Kiểm thử & Rà soát giấy phép
+
+```bash
+python -m pytest -q
+python scripts/check_direct_licenses.py
+```
+
+---
+
+## Nhóm phát triển
+
+| Thành viên | GitHub |
+| :--- | :--- |
+| **Trương Ngọc Hiểu** | [@hieutnago](https://github.com/hieutnago) |
+| **Trần Trọng Chiến** | [@blueMonkey23](https://github.com/blueMonkey23) |
+| **Nguyễn Hà Phương** | [@ourstorycomic](https://github.com/ourstorycomic) |
+
+---
+
+## Tài liệu & Quy chuẩn cộng đồng
+
+- [CHANGELOG.md](CHANGELOG.md) — Nhật ký thay đổi tự động qua `git-cliff` ([hướng dẫn](docs/GIT_CLIFF_GUIDE.md))
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Hướng dẫn đóng góp dự án
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — Quy tắc ứng xử cộng đồng
+- [SECURITY.md](SECURITY.md) — Chính sách bảo mật và báo cáo lỗ hổng
+- [LICENSE](LICENSE) — Giấy phép mã nguồn mở Apache License 2.0
